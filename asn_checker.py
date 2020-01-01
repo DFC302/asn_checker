@@ -4,6 +4,7 @@ import requests
 import socket
 import sys
 import argparse
+import subprocess
 
 def options():
 	parser = argparse.ArgumentParser()
@@ -26,7 +27,6 @@ def options():
 		help="Display detailed information for ASN.",
 		action="store_true",
 	)
-
 	# if no arguments are given, print usage message
 	if len(sys.argv[1:]) == 0:
 		parser.print_help()
@@ -36,35 +36,24 @@ def options():
 
 	return args
 
-def return_ip():
-	if options().url:
-		try:
-			if options().url.startswith("http://"):
-				url = options().url[7:]
-				ip = socket.gethostbyname(url)
-				return ip
-
-			elif options().url.startswith("https://"):
-				url = options().url[8:]
-				ip = socket.gethostbyname(url)
-				return ip
-
-			else:
-				url = options().url
-				ip = socket.gethostbyname(url)
-				return ip
-
-		except socket.gaierror:
-			print("ERROR: Host not recognized!")
-			sys.exit(1)
-
-	elif options().ip:
-		ip = options().ip
-		return ip
-
-def asn():
+def parse_ip():
 	try:
-		ip = return_ip()
+		if options().url:
+			url = options().url.strip("http://").strip("https://")
+			ip = socket.gethostbyname(url)
+			return ip
+	
+		elif options().ip:
+			ip = options().ip
+			return ip
+
+	except socket.gaierror:
+		print("\nERROR: Host not recognized!\n")
+		sys.exit(1)
+
+def grab_asn():
+	try:
+		ip = parse_ip()
 		api_url = f"https://api.iptoasn.com/v1/as/ip/{ip}"
 		response = requests.get(api_url)
 		data = response.json()
@@ -78,10 +67,14 @@ def asn():
 		IP = data["ip"]
 		last_IP = data["last_ip"]
 
+		# command to grab cidr's
+		cmd = f"whois -h whois.radb.net -- '-i origin AS{ASN}' | grep -Eo '([0-9.]+){{4}}/[0-9]+' | sort -u"
+
 		if not options().details:
-			print(f"ASN\t{ASN}")
+			print(f"ASN:\t{ASN}")
 
 		elif options().details:
+			print("\n")
 			print(f"Announced:   \t{announced}") #9
 			print(f"Country Code:\t{country_code}") #13
 			print(f"Description: \t{description}") #12
@@ -90,11 +83,16 @@ def asn():
 			print(f"Ending IP:   \t{last_IP}") #10
 			print(f"IP Searched: \t{IP}") #12
 
+			print(f"\nIP's associated with ASN: {ASN}\n")
+			print(subprocess.check_output(cmd, shell=True).decode())
+
 	except ValueError:
 		print("ERROR! ASN could not be parsed!")
 		print("Make sure you did not accidentially put URL for IP or vice versa.")
 		sys.exit(1)
 
 def main():
-	asn()
+	grab_asn()
 main()
+
+		
