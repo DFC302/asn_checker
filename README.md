@@ -13,6 +13,8 @@ optional arguments:
   --url URL   Check ASN number from URL.
   --details   Display detailed information for ASN.
 ```
+**Use standard output redirection to write results to a file**\
+**EXAMPLE: asn_checker.py --url example.com --details >> asn_details_example_com.txt**
 
 # Author
 Matthew Greer
