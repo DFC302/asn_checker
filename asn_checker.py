@@ -93,6 +93,8 @@ def grab_asn():
 
 def main():
 	grab_asn()
-main()
+
+if __name__ == "__main__":
+	main()
 
 		
